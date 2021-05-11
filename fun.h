@@ -16,6 +16,14 @@
 #define PRINT_TABLE 1
 #define PRINT_AND_SEND_TABLE 2 
 
+
+#define ADDRESS     "tcp://localhost:1883"
+#define CLIENTID    "ExampleClientPub"
+#define TOPIC       "MQTT Examples"
+#define PAYLOAD     "Hello World!"
+#define QOS         1
+#define TIMEOUT     10000L
+
 //estrutura com os dados de um enlace vizinho
 typedef struct {
 	int id;
@@ -68,3 +76,5 @@ unsigned int SEQ_NUMBER;
 router * routers; 	//enlaces deste roteador
 int qt_links;	 			//routers.length()
 //dv_table dv_table_;			//tabela vetor-distância deste roteador
+
+
