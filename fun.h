@@ -1,6 +1,4 @@
-#define MAX_ROUTERS 100 //número maximo de roteadores
-#define MAX_LINE 300
-#define INFINITE 20 
+#define MAX_NAME_USER 100
 
 #define MSGLEN 100 //tamanho maximo da mensagem
 #define BUFLEN sizeof(packet)
@@ -9,17 +7,15 @@
 #define TYPE_DV 2 //identificador de mensagem contendo o vetor distancia
 
 #define TRIES_UNTIL_DESCONNECT 3
-#define TIMEOUT 2
 
 #define DV_RESEND_INTERVAL 10 //tempo de espera para mandar o vetor distancia.
 
 #define PRINT_TABLE 1
 #define PRINT_AND_SEND_TABLE 2 
 
-
 #define ADDRESS     "tcp://localhost:1883"
-#define CLIENTID    "ExampleClientPub"
-#define TOPIC       "MQTT Examples"
+//#define CLIENTID    "ExampleClientPub"
+//#define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
@@ -43,7 +39,7 @@ typedef struct {
 //estrutura da mensagem com o vetor distância
 typedef struct {
 	int id;			//roteador origem
-	distance_vector dv[MAX_ROUTERS]; //seu vetor distância
+	distance_vector dv[100]; //seu vetor distância
 } dv_payload;
 
 //estrutura da matriz/tabela de roteamento
@@ -62,11 +58,21 @@ typedef struct {
 	short jump;
 } packet;
 
+void menu();
 packet create_packet(int id_src, int id_dst, int type, void* message);
 void* sub (void *data);
 void send_message(packet* pck, router* link);
 void* pub (void *data);
 void start_chat();
+
+void connlost(void *context, char *cause);
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response);
+void onDisconnect(void* context, MQTTAsync_successData* response);
+void onSendFailure(void* context, MQTTAsync_failureData* response);
+void onSend(void* context, MQTTAsync_successData* response);
+void onConnectFailure(void* context, MQTTAsync_failureData* response);
+void onConnect(void* context, MQTTAsync_successData* response);
+int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m);
 
 //necessário mutex para proteger escrita concorrente na dv_table_
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -76,5 +82,7 @@ unsigned int SEQ_NUMBER;
 router * routers; 	//enlaces deste roteador
 int qt_links;	 			//routers.length()
 //dv_table dv_table_;			//tabela vetor-distância deste roteador
+int finished;
 
-
+char TOPIC [MAX_NAME_USER];
+char CLIENTID [MAX_NAME_USER];

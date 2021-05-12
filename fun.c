@@ -1,5 +1,38 @@
 #include "fun.h"
 
+void menu ()
+{
+    int option_user;
+	//int option_topic;
+	printf("Escolha uma das opções a baixo para ser seu Usuário no CHAT :\n");
+	printf("Digite 1 para ser o user_01 :\n");
+	printf("Digite 2 para ser o user_01 :\n");
+	printf("Digite 3 para ser o user_01 :\n");
+	printf("Digite 4 para ser o user_01 :\n");
+
+    scanf("%d", &option_user);
+	switch(option_user)
+	{
+		case 1:
+			strcpy(CLIENTID, "U1_Control");
+			printf("oii eu sou o 1 \n");
+			break;
+		case 2:
+			strcpy(CLIENTID, "U2_Control");
+			break;
+		case 3:
+			strcpy(CLIENTID, "U3_Control");
+			break;
+		case 4:
+			strcpy(CLIENTID, "U4_Control");
+			break;
+	}
+
+	strcpy(TOPIC, "U4_Control");
+
+    printf("%s \n", CLIENTID);
+}
+
 //Recebe um 'packet' e encaminha ao roteador na tabela de roteamento que possua o menor custo.
 void send_message(packet* pck, router* link)
 {
@@ -132,6 +165,8 @@ void start_chat()
 	pthread_join(threads[0], NULL);
 }
 
+
+
 void connlost(void *context, char *cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
@@ -184,26 +219,24 @@ void onSend(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
-	int rc;
+	//int rc;
 
 	printf("Message with token value %d delivery confirmed\n", response->token);
 	opts.onSuccess = onDisconnect;
 	opts.onFailure = onDisconnectFailure;
 	opts.context = client;
-	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+	/*if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
-	}
+	}*/
 }
-
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	printf("Connect failed, rc %d\n", response ? response->code : 0);
 	finished = 1;
 }
-
 
 void onConnect(void* context, MQTTAsync_successData* response)
 {
@@ -229,6 +262,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 
 int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
-	/* not expecting any messages */
+	//not expecting any messages
 	return 1;
 }
