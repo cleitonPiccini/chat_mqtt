@@ -185,10 +185,11 @@ void connlost(void *context, char *cause)
  		finished = 1;
 	}
 }
-
+//Incrementada com código do sub
 void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Disconnect failed\n");
+	//printf("Disconnect failed\n");
+	printf("Disconnect failed, rc %d\n", response->code);
 	finished = 1;
 }
 
@@ -232,9 +233,23 @@ void onSend(void* context, MQTTAsync_successData* response)
 	}*/
 }
 
+void onSubscribe(void* context, MQTTAsync_successData* response)
+{
+	printf("Subscribe succeeded\n");
+	subscribed = 1;
+}
+
+void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
+{
+	printf("Subscribe failed, rc %d\n", response->code);
+	finished = 1;
+}
+
+
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	printf("Connect failed, rc %d\n", response ? response->code : 0);
+	printf("Connect failed, _teste rc %d\n", response->code);
 	finished = 1;
 }
 
@@ -246,22 +261,43 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Successful connection\n");
-	opts.onSuccess = onSend;
-	opts.onFailure = onSendFailure;
+	
+	//Publicação no tópico.
+	//opts.onSuccess = onSend;
+	//opts.onFailure = onSendFailure;
+	
+	//Assinatura do Proprio Tópico.
+	opts.onSuccess = onSubscribe;
+	opts.onFailure = onSubscribeFailure;
 	opts.context = client;
-	pubmsg.payload = PAYLOAD;
-	pubmsg.payloadlen = (int)strlen(PAYLOAD);
+	//pubmsg.payload = PAYLOAD;
+	//pubmsg.payloadlen = (int)strlen(PAYLOAD);
 	pubmsg.qos = QOS;
 	pubmsg.retained = 0;
-	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+	/*if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
 		exit(EXIT_FAILURE);
+	}*/
+	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start subscribe, return code %d\n", rc);
+		finished = 1;
 	}
 }
 
+//Incrementada com código do sub
 int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
 	//not expecting any messages
+	//printf("Message arrived\n");
+    //printf("     topic: %s\n", topicName);
+    pthread_mutex_lock(&printf_mutex);
+	//printf("   User: %.*s\n", m->, (char*)m->payload);
+	//printf("   Menssagem: %s\n", m->payloadlen, (char*)m->payload);
+	printf("   Menssagem: %s\n", (char*)m->payload);
+    MQTTAsync_freeMessage(&m);
+    MQTTAsync_free(topicName);
+	pthread_mutex_unlock(&printf_mutex);
 	return 1;
 }

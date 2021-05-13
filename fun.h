@@ -82,6 +82,8 @@ unsigned int SEQ_NUMBER;
 router * routers; 	//enlaces deste roteador
 int qt_links;	 			//routers.length()
 //dv_table dv_table_;			//tabela vetor-distância deste roteador
+int disc_finished = 0;
+int subscribed = 0;
 int finished;
 
 char TOPIC [MAX_NAME_USER];

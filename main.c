@@ -16,7 +16,9 @@ int main (){
 
     MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-	int rc;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    int rc;
 
     /*char user[MAX_NAME_USER];
     char id_user[4] = "ID_";
@@ -58,13 +60,48 @@ int main (){
 	printf("Waiting for publication of %s\n"
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
-	//while (!finished)
-    while (1)
+	/*while (!finished)
+    //while (1)
 		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
 		#endif
+*/
+    while (!finished) {
+		//int64_t t = getTime();
+
+		char buf[256];
+        //buf = malloc (256 * sizeof (char));
+		int n; //= snprintf(buf, sizeof(buf), "%lld", (long long) t);
+        //pthread_mutex_lock(&printf_mutex);
+		printf("tamanho da string %d\n",n);
+        scanf("%s",buf);
+        //buf = getchar();
+        n = (int) strlen(buf);
+        printf("tamanho da string %d\n",n);
+
+		opts.onSuccess = onSend;
+		opts.onFailure = onSendFailure;
+		opts.context = client;
+
+		pubmsg.payload = buf;
+		pubmsg.payloadlen = n;
+		pubmsg.qos = QOS;
+		pubmsg.retained = 0;
+
+		if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+		{
+			printf("Failed to start sendMessage, return code %d\n", rc);
+			exit(EXIT_FAILURE);
+		}
+        //pthread_mutex_unlock(&printf_mutex);
+		#if defined(_WIN32)
+			Sleep(SAMPLE_PERIOD);
+		#else
+			usleep(1000);
+		#endif
+	}
 
 	MQTTAsync_destroy(&client);
  	return rc;
