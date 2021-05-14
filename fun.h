@@ -85,6 +85,7 @@ int qt_links;	 			//routers.length()
 int disc_finished = 0;
 int subscribed = 0;
 int finished;
+int flag_local_pub = 0;
 
 char TOPIC [MAX_NAME_USER];
 char CLIENTID [MAX_NAME_USER];

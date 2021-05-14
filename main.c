@@ -72,14 +72,11 @@ int main (){
 		//int64_t t = getTime();
 
 		char buf[256];
-        //buf = malloc (256 * sizeof (char));
-		int n; //= snprintf(buf, sizeof(buf), "%lld", (long long) t);
+		int n ;//= snprintf(buf, sizeof(buf), "%lld", (long long) t);
         //pthread_mutex_lock(&printf_mutex);
-		printf("tamanho da string %d\n",n);
-        scanf("%s",buf);
-        //buf = getchar();
+		getchar();
+		fgets(buf, sizeof(buf), stdin);
         n = (int) strlen(buf);
-        printf("tamanho da string %d\n",n);
 
 		opts.onSuccess = onSend;
 		opts.onFailure = onSendFailure;
@@ -95,6 +92,7 @@ int main (){
 			printf("Failed to start sendMessage, return code %d\n", rc);
 			exit(EXIT_FAILURE);
 		}
+		flag_local_pub = 1;
         //pthread_mutex_unlock(&printf_mutex);
 		#if defined(_WIN32)
 			Sleep(SAMPLE_PERIOD);

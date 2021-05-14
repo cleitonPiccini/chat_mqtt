@@ -218,15 +218,15 @@ void onSendFailure(void* context, MQTTAsync_failureData* response)
 
 void onSend(void* context, MQTTAsync_successData* response)
 {
-	MQTTAsync client = (MQTTAsync)context;
+	/*MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
-	//int rc;
+	int rc;
 
 	printf("Message with token value %d delivery confirmed\n", response->token);
 	opts.onSuccess = onDisconnect;
 	opts.onFailure = onDisconnectFailure;
 	opts.context = client;
-	/*if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
@@ -261,24 +261,14 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Successful connection\n");
-	
-	//Publicação no tópico.
-	//opts.onSuccess = onSend;
-	//opts.onFailure = onSendFailure;
-	
+
 	//Assinatura do Proprio Tópico.
 	opts.onSuccess = onSubscribe;
 	opts.onFailure = onSubscribeFailure;
 	opts.context = client;
-	//pubmsg.payload = PAYLOAD;
-	//pubmsg.payloadlen = (int)strlen(PAYLOAD);
 	pubmsg.qos = QOS;
 	pubmsg.retained = 0;
-	/*if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(EXIT_FAILURE);
-	}*/
+
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
@@ -289,14 +279,13 @@ void onConnect(void* context, MQTTAsync_successData* response)
 //Incrementada com código do sub
 int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
-	//not expecting any messages
-	//printf("Message arrived\n");
-    //printf("     topic: %s\n", topicName);
-    pthread_mutex_lock(&printf_mutex);
-	//printf("   User: %.*s\n", m->, (char*)m->payload);
-	//printf("   Menssagem: %s\n", m->payloadlen, (char*)m->payload);
-	printf("   Menssagem: %s\n", (char*)m->payload);
-    MQTTAsync_freeMessage(&m);
+	pthread_mutex_lock(&printf_mutex);
+	if (flag_local_pub == 0)
+	{
+		printf("   Menssagem: %s\n", (char*)m->payload);
+	}
+	flag_local_pub = 0;
+	MQTTAsync_freeMessage(&m);
     MQTTAsync_free(topicName);
 	pthread_mutex_unlock(&printf_mutex);
 	return 1;

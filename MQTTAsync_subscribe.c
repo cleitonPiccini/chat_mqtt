@@ -40,6 +40,7 @@ int disc_finished = 0;
 int subscribed = 0;
 int finished = 0;
 
+//programa ja possui esta função
 void connlost(void *context, char *cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
@@ -60,7 +61,7 @@ void connlost(void *context, char *cause)
 	}
 }
 
-
+//Imcorporada ao programa.
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
     printf("Message arrived\n");
