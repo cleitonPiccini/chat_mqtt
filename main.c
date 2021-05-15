@@ -32,7 +32,7 @@ int main (){
     //TOPIC = id_user;
     printf("%s", id_user);
     */
-    menu();
+    menu_init();
     
 	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS)
 	{
@@ -57,9 +57,9 @@ int main (){
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Waiting for publication of %s\n"
+	/*printf("Waiting for publication of %s\n"
          "on topic %s for client with ClientID: %s\n",
-         PAYLOAD, TOPIC, CLIENTID);
+         PAYLOAD, TOPIC, CLIENTID);*/
 	/*while (!finished)
     //while (1)
 		#if defined(_WIN32)

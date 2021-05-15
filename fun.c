@@ -1,21 +1,23 @@
 #include "fun.h"
 
-void menu ()
+void menu_init ()
 {
     int option_user;
-	//int option_topic;
+	int option_chat;
+	int option_topic;
+	
+	printf("\e[H\e[2J");
 	printf("Escolha uma das opções a baixo para ser seu Usuário no CHAT :\n");
 	printf("Digite 1 para ser o user_01 :\n");
-	printf("Digite 2 para ser o user_01 :\n");
-	printf("Digite 3 para ser o user_01 :\n");
-	printf("Digite 4 para ser o user_01 :\n");
+	printf("Digite 2 para ser o user_02 :\n");
+	printf("Digite 3 para ser o user_03 :\n");
+	printf("Digite 4 para ser o user_04 :\n");
 
     scanf("%d", &option_user);
 	switch(option_user)
 	{
 		case 1:
 			strcpy(CLIENTID, "U1_Control");
-			printf("oii eu sou o 1 \n");
 			break;
 		case 2:
 			strcpy(CLIENTID, "U2_Control");
@@ -26,12 +28,55 @@ void menu ()
 		case 4:
 			strcpy(CLIENTID, "U4_Control");
 			break;
+		printf("Valor invalido tente novamente.");
 	}
+	printf("\e[H\e[2J");
+	printf("Escolha uma das duas opções de conversa :\n");
+	printf("Digite 1 Conversa particular entre você e outro usuário :\n");
+	printf("Digite 2 Conversa em grupo com todos os usuários online :\n");
+	
+	scanf("%d", &option_chat);
+	printf("\e[H\e[2J");
+	if (option_chat == 1)
+	{
+		printf("Escolha o outro usuário para a conversa:\n");
+		if (option_user != 1) printf("Digite 1 para conversar com o user 1 :\n");
+		if (option_user != 2) printf("Digite 2 para conversar com o user 2 :\n");
+		if (option_user != 3) printf("Digite 3 para conversar com o user 3 :\n");
+		if (option_user != 4) printf("Digite 4 para conversar com o user 4 :\n");
 
-	strcpy(TOPIC, "U4_Control");
+	} else if (option_chat == 2){
+		printf("O CHAT com todos os usuários online foi iniciado:\n");
+	} else{
+		printf("Valor invalido tente novamente.");
+	}
+	//inserir desvio do programa aqui.
+    scanf("%d", &option_topic);
+	if (option_topic == option_user) printf("Valor invalido tente novamente.");
+	
+	switch(option_topic)
+	{
+		case 1:
+			strcpy(TOPIC, "U1_Control");
+			break;
+		case 2:
+			strcpy(TOPIC, "U2_Control");
+			break;
+		case 3:
+			strcpy(TOPIC, "U3_Control");
+			break;
+		case 4:
+			strcpy(TOPIC, "U4_Control");
+			break;
+	}
+	
+	//strcpy(TOPIC, "U4_Control");
 
-    printf("%s \n", CLIENTID);
+    printf("\e[H\e[2J");
+	printf("USUÁRIO = %s\n", CLIENTID);
 }
+
+
 
 //Recebe um 'packet' e encaminha ao roteador na tabela de roteamento que possua o menor custo.
 void send_message(packet* pck, router* link)
