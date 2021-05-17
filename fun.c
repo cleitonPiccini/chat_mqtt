@@ -1,112 +1,86 @@
 #include "fun.h"
 
-void menu_init ()
-{
-    int option_user;
-	int option_chat;
-	int option_topic;
-	
-	printf("\e[H\e[2J");
-	printf("Escolha uma das opções a baixo para ser seu Usuário no CHAT :\n");
-	printf("Digite 1 para ser o user_01 :\n");
-	printf("Digite 2 para ser o user_02 :\n");
-	printf("Digite 3 para ser o user_03 :\n");
-	printf("Digite 4 para ser o user_04 :\n");
-
-    scanf("%d", &option_user);
-	switch(option_user)
-	{
-		case 1:
-			strcpy(CLIENTID, "U1_Control");
-			break;
-		case 2:
-			strcpy(CLIENTID, "U2_Control");
-			break;
-		case 3:
-			strcpy(CLIENTID, "U3_Control");
-			break;
-		case 4:
-			strcpy(CLIENTID, "U4_Control");
-			break;
-		printf("Valor invalido tente novamente.");
-	}
-	printf("\e[H\e[2J");
-	printf("Escolha uma das duas opções de conversa :\n");
-	printf("Digite 1 Conversa particular entre você e outro usuário :\n");
-	printf("Digite 2 Conversa em grupo com todos os usuários online :\n");
-	
-	scanf("%d", &option_chat);
-	printf("\e[H\e[2J");
-	if (option_chat == 1)
-	{
-		printf("Escolha o outro usuário para a conversa:\n");
-		if (option_user != 1) printf("Digite 1 para conversar com o user 1 :\n");
-		if (option_user != 2) printf("Digite 2 para conversar com o user 2 :\n");
-		if (option_user != 3) printf("Digite 3 para conversar com o user 3 :\n");
-		if (option_user != 4) printf("Digite 4 para conversar com o user 4 :\n");
-
-	} else if (option_chat == 2){
-		printf("O CHAT com todos os usuários online foi iniciado:\n");
-	} else{
-		printf("Valor invalido tente novamente.");
-	}
-	//inserir desvio do programa aqui.
-    scanf("%d", &option_topic);
-	if (option_topic == option_user) printf("Valor invalido tente novamente.");
-	
-	switch(option_topic)
-	{
-		case 1:
-			strcpy(TOPIC, "U1_Control");
-			break;
-		case 2:
-			strcpy(TOPIC, "U2_Control");
-			break;
-		case 3:
-			strcpy(TOPIC, "U3_Control");
-			break;
-		case 4:
-			strcpy(TOPIC, "U4_Control");
-			break;
-	}
-	
-	//strcpy(TOPIC, "U4_Control");
-
-    printf("\e[H\e[2J");
-	printf("USUÁRIO = %s\n", CLIENTID);
-}
-
-
-
 //Recebe um 'packet' e encaminha ao roteador na tabela de roteamento que possua o menor custo.
-void send_message(packet* pck, router* link)
-{
-	int ack_received = 0;
+void send_message(MQTTAsync client, MQTTAsync_responseOptions opts, MQTTAsync_message pubmsg, int type_msg)
+{   
+	char buffer_[MAX_MESSAGE];
+	char message[MAX_NAME_USER + MAX_MESSAGE];
+	int n, rc;
 	
-	//Caso seja mensagem do tipo dados, e o router seja inacesivel
-	if(pck->type == TYPE_DATA){// && (
-			//dv_table_.distance[LOCAL_ROUTER.id][link->id].allocated == 0 ||
-			//dv_table_.distance[LOCAL_ROUTER.id][link->id].hop == INFINITE)) {
-		pthread_mutex_lock(&printf_mutex);
-		printf("\n Roteador inalcançável %d.\n", link->id);
-		pthread_mutex_unlock(&printf_mutex);
-		return;
+	switch(type_msg){
+		//Mensagem de convite
+		case 1:
+			strcat(message, "--Solicitação de CHAT do " );
+			strcat(message, CLIENTID );
+			strcat(message, " --s = sim / --n = não.\n" );
+			//printf("valor mensagem = %s\n", message);
+			
+			//strcat(message, "é um convite" );
+			break;
+		//Mensagem avisando que está saindo do CHAT.
+		case 2:
+			strcat(message, CLIENTID );
+			strcat(message, " Saiu do CHAT" );
+			break;
+		//Mensagem de conversação do CHAT.
+		case 3:
+			setbuf(stdin, 0);
+			fgets(buffer_, sizeof(buffer_), stdin);
+    		strcat(message, CLIENTID );
+			strcat(message, " => ");
+			strcat(message, buffer_);
+			break;
+		//Valor do tipo de mensagem errado.
+		default:
+			printf("Erro, tipo de mensagem invalido\n");
+			return;
 	}
-	 
-	//Se a entrega não deu certo, assume-se que o enlace caiu.
-	//Roteador precisa atualizar o vetor-distância.
-	if (!ack_received) {
-		pthread_mutex_lock(&printf_mutex);
-		printf("-\nRoteador %d inalcançável após %d tentativas com estouro de timeout.\n", link->id, TRIES_UNTIL_DESCONNECT);
-		printf("-\n");
-		pthread_mutex_unlock(&printf_mutex);
+
+	//printf("oi mensagem = %s\n", message);
+	n = (int) strlen(message);
+	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
+	opts.context = client;
+	pubmsg.payload = message;
+	pubmsg.payloadlen = n;
+	pubmsg.qos = QOS;
+	pubmsg.retained = 0;
+
+	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start sendMessage, return code %d\n", rc);
+		exit(EXIT_FAILURE);
 	}
+	flag_local_pub = 1;
+    
 }
 
+void convite_chat(MQTTAsync client, MQTTAsync_connectOptions conn_opts)
+{
+	int rc;
+
+	conn_opts.keepAliveInterval = 20;
+	conn_opts.cleansession = 1;
+	conn_opts.onSuccess = onConnect;
+	conn_opts.onFailure = onConnectFailure;
+	conn_opts.context = client;
+
+	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start connect, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
+	sleep(2);
+	if ((rc = MQTTAsync_setCallbacks(client, NULL, connlost, messageArrived, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to set callback, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
+}
 //Função a ser executada na thread que recebe as mensagens, identifica-as e toma uma decisão.
 void* sub (void *data)
 {
-	int qt_routers;
+	/*int qt_routers;
 	
 	packet *pck;
 	//router *link;
@@ -142,54 +116,13 @@ void* sub (void *data)
 		
 		free(pck);
 	}
-
+	*/
 	pthread_exit(NULL);
-}
-
-//Construtor do tipo 'packet'.
-packet create_packet(int id_src, int id_dst, int type, void* message)
-{
-	packet pck;
-	pck.id_src = id_src;
-	pck.id_dst = id_dst;
-	pck.type = type;
-	pck.seq_number = SEQ_NUMBER++;
-	pck.jump = 0;
-	strcpy(pck.data, message);
-	return pck;
 }
 
 //Função a ser executada na thread que lê e envia as mensagens da entrada padrão.
 void* pub (void *data)
 {
-	int id_dst;
-	char message[MSGLEN];
-	//router* next_link;
-	
-	// loop infinito, sempre espera por novos envios
-	while(1) {
-		scanf("%d", &id_dst);
-		getchar();
-		if (id_dst == LOCAL_ROUTER.id) {
-			pthread_mutex_lock(&printf_mutex);
-			printf("-\n ! O roteador %d é este !\n-\n", id_dst);
-			pthread_mutex_unlock(&printf_mutex);
-			continue;
-		}
-		
-		pthread_mutex_lock(&printf_mutex);
-		printf("Escreva a mensagem (limite 100 caracteres): ");
-		pthread_mutex_unlock(&printf_mutex);
-		fflush(stdout);
-		fflush(stdin);
-		fgets(message, MSGLEN, stdin);
-		message[strlen(message)-1] = '\0';
-		
-		//cria o pacote, encontra o vizinho que leva ao destino e envia a mensagem
-		//packet pck = create_packet(LOCAL_ROUTER.id, id_dst, TYPE_DATA, message);
-		//next_link = &routers[vizinho_index];
-		//send_message(&pck, next_link);
-	}
 	pthread_exit(NULL);
 }
 
@@ -261,8 +194,10 @@ void onSendFailure(void* context, MQTTAsync_failureData* response)
 	}
 }
 
+//Mensagem enviada.
 void onSend(void* context, MQTTAsync_successData* response)
 {
+	printf("-\n");
 	/*MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
@@ -278,41 +213,42 @@ void onSend(void* context, MQTTAsync_successData* response)
 	}*/
 }
 
+//Assinatura do topico funcionou.
 void onSubscribe(void* context, MQTTAsync_successData* response)
 {
-	printf("Subscribe succeeded\n");
+	//printf("Subscribe succeeded\n");
 	subscribed = 1;
 }
-
+//Assinatura do topico falhou.
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
 	printf("Subscribe failed, rc %d\n", response->code);
 	finished = 1;
 }
-
-
+//Conexão falhou.
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	printf("Connect failed, rc %d\n", response ? response->code : 0);
 	printf("Connect failed, _teste rc %d\n", response->code);
 	finished = 1;
 }
-
+//Se conecta ao topico.
+//Efetua a assinatura do topico.
 void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	//MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
-	printf("Successful connection\n");
+	//printf("Successful connection\n");
 
 	//Assinatura do Proprio Tópico.
 	opts.onSuccess = onSubscribe;
 	opts.onFailure = onSubscribeFailure;
 	opts.context = client;
-	pubmsg.qos = QOS;
-	pubmsg.retained = 0;
+	//pubmsg.qos = QOS;
+	//pubmsg.retained = 0;
 
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
@@ -321,13 +257,58 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	}
 }
 
-//Incrementada com código do sub
+//Função callback - Recebe mensagem.
 int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
-	pthread_mutex_lock(&printf_mutex);
+	char message [MAX_MESSAGE + MAX_NAME_USER];
+	char message_s [MAX_MESSAGE + MAX_NAME_USER];
+	char message_n [MAX_MESSAGE + MAX_NAME_USER];
+	char message_convite [MAX_MESSAGE + MAX_NAME_USER];
+
+	strcpy(message, (char*)m->payload);
+	strcat(message_s, TOPIC);
+	strcat(message_s, " => --s");
+	strcat(message_n, TOPIC);
+	strcat(message_n, " => --n");
+
+	message_convite[0] = message[0];
+	message_convite[1] = message[1];
+	message_convite[2] = message[2];
+	message_convite[3] = message[3];
+
+	//printf("recebi uma mensagem\n");
+	
+	if ( !strcmp(message, message_s) && espera_convite == 1)
+	{
+		printf("respondeu sim\n");
+		pthread_mutex_lock(&espera_convite_mutex);
+		espera_convite	= 2;
+		pthread_mutex_unlock(&espera_convite_mutex);
+	} else if ( !strcmp(message, message_n) && espera_convite == 1) {
+		printf("respondeu não\n");
+		pthread_mutex_lock(&espera_convite_mutex);
+		espera_convite	= 3;
+		pthread_mutex_unlock(&espera_convite_mutex);
+	} else if (!strcmp(message_convite, "--So") && resposta_convite == 1 )
+	{
+		//strcpy(message_convite, " ");
+		//message_convite[0] = message[27];
+		//message_convite[1] = message[28];
+		//strcat(TOPIC,message_convite);
+		//strcat(TOPIC,"_Control");
+		printf("recebi o convite\n");
+		pthread_mutex_lock(&resposta_convite_mutex);
+		resposta_convite = 0;
+		pthread_mutex_unlock(&resposta_convite_mutex);
+	}
+
+	pthread_mutex_lock(&printf_mutex);	
+	
+
 	if (flag_local_pub == 0)
 	{
-		printf("   Menssagem: %s\n", (char*)m->payload);
+		//printf("%s, topc name = %s",(char*)m->payload, (char*) topicName);
+		printf("recebido = %s",message);
 	}
 	flag_local_pub = 0;
 	MQTTAsync_freeMessage(&m);
