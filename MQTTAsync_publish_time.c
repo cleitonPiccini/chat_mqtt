@@ -47,7 +47,8 @@
 #define ADDRESS         "tcp://localhost:1883"
 
 #define CLIENTID        "ExampleClientTimePub"
-#define TOPIC           "data/time"
+//#define TOPIC           "data/time"
+#define TOPIC           "U2_Control"
 #define QOS             1
 #define TIMEOUT         10000L
 #define SAMPLE_PERIOD   10000L    // in ms
@@ -106,6 +107,8 @@ void onSendFailure(void* context, MQTTAsync_failureData* response)
 void onSend(void* context, MQTTAsync_successData* response)
 {
 	// This gets called when a message is acknowledged successfully.
+	//printf("oiii sou o send = %s\n", (char*)response->alt.pub.destinationName);
+	printf("oiii sou o send = %s\n", (char*)response->alt.connect.serverURI);
 }
 
 
@@ -185,10 +188,10 @@ int main(int argc, char* argv[])
 	while (!finished) {
 		int64_t t = getTime();
 
-		char buf[256];
-		int n = snprintf(buf, sizeof(buf), "%lld", (long long) t);
+		char buf[256] = "oi user 2 control.....\n";
+		//int n = snprintf(buf, sizeof(buf), "%lld", (long long) t);
 		printf("%s\n", buf);
-
+		int n = strlen(buf);
 		pub_opts.onSuccess = onSend;
 		pub_opts.onFailure = onSendFailure;
 		pub_opts.context = client;
@@ -203,6 +206,23 @@ int main(int argc, char* argv[])
 			printf("Failed to start sendMessage, return code %d\n", rc);
 			exit(EXIT_FAILURE);
 		}
+		
+		strcpy(buf, "oi user 1 control.....\n");
+		//int n = snprintf(buf, sizeof(buf), "%lld", (long long) t);
+		printf("%s\n", buf);
+		n = strlen(buf);
+		
+		pubmsg.payload = buf;
+		pubmsg.payloadlen = n;
+		pubmsg.qos = QOS;
+		pubmsg.retained = 0;
+
+		if ((rc = MQTTAsync_sendMessage(client, "U1_Control", &pubmsg, &pub_opts)) != MQTTASYNC_SUCCESS)
+		{
+			printf("Failed to start sendMessage, return code %d\n", rc);
+			exit(EXIT_FAILURE);
+		}
+
 
 		#if defined(_WIN32)
 			Sleep(SAMPLE_PERIOD);

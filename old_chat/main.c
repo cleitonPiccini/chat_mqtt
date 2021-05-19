@@ -11,30 +11,26 @@
 
 int main (){
 
-	//MQTTClient client;
-    //MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-    //MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    //MQTTClient_deliveryToken token;
-    
-	//int rc;
-	//int option_user, option_chat, option_topic;
-	//int exit_ = 1;
-	//char buffer_ [MAX_NAME_USER + MAX_MESSAGE];
+    /*MQTTAsync client;
+	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+    int rc;
+	int option_user, option_chat, option_topic;
+	int exit_ = 1;
+	char buffer_ [MAX_NAME_USER + MAX_MESSAGE];*/
 	
 	pthread_t threads[2];
-	printf("vou para a thread\n");
-	
-	pthread_create(&(threads[0]), NULL, subscribe_thread, NULL);
-	pthread_create(&(threads[1]), NULL, menu_thread, NULL);
+	//pthread_create(&(threads[0]), NULL, pub, NULL);
+	//pthread_create(&(threads[1]), NULL, sub, NULL);
+
+	pthread_create(&(threads[0]), NULL, sub, NULL);
+	pthread_create(&(threads[1]), NULL, pub, NULL);
 	pthread_join(threads[1], NULL);
 	pthread_join(threads[0], NULL);
 	
-	//pthread_create(&(threads[0]), NULL, sub, NULL);
-	//pthread_create(&(threads[1]), NULL, pub, NULL);
-	printf("passei pelas thread");
 	//pthread_join(threads[0], NULL);
 	//char message[MAX_NAME_USER+MAX_MESSAGE];
-	//exit_ = 1;
 	//Definição de usuario para conectar ao broker.
 	/*while (exit_ == 1)
 	{
@@ -68,13 +64,19 @@ int main (){
 			default:
 				printf("Valor invalido tente novamente.");
 		}	
-	}*/
+	}
 	//Se conecta ao broker.
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client object, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+		MQTTAsync_destroy(&client);
+ 		return rc;
+	}
 	
 
-	//start_chat(client);
 
-	/*exit_ = 1;
+	exit_ = 1;
 	while (exit_ == 1)
 	{
 		printf("\e[H\e[2J");
@@ -216,13 +218,10 @@ int main (){
 	}
 	printf("\e[H\e[2J");
 	printf("USUÁRIO = %s\n", CLIENTID);
-*/
-/*destroy_exit:
-    MQTTClient_destroy(&client);
-exit:
-    return 0;
-	//MQTTAsync_destroy(&client);
- 	//return rc;
+
+
+	MQTTAsync_destroy(&client);
+ 	return rc;
 */
 	return 0;
 }

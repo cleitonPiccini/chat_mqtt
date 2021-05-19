@@ -23,20 +23,20 @@ typedef struct
 */
 
 void menu();
-//void* sub ();
-//void send_message(MQTTAsync client, MQTTAsync_responseOptions opts, MQTTAsync_message pubmsg, int type_msg);
-//void convite_chat(MQTTAsync client, MQTTAsync_connectOptions conn_opts);
+void* sub ();
+void send_message(MQTTAsync client, MQTTAsync_responseOptions opts, MQTTAsync_message pubmsg, int type_msg);
+void convite_chat(MQTTAsync client, MQTTAsync_connectOptions conn_opts);
 void* pub (void *data);
 void start_chat();
 
 void connlost(void *context, char *cause);
-//void onDisconnectFailure(void* context, MQTTAsync_failureData* response);
-//void onDisconnect(void* context, MQTTAsync_successData* response);
-//void onSendFailure(void* context, MQTTAsync_failureData* response);
-//void onSend(void* context, MQTTAsync_successData* response);
-//void onConnectFailure(void* context, MQTTAsync_failureData* response);
-//void onConnect(void* context, MQTTAsync_successData* response);
-//int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m);
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response);
+void onDisconnect(void* context, MQTTAsync_successData* response);
+void onSendFailure(void* context, MQTTAsync_failureData* response);
+void onSend(void* context, MQTTAsync_successData* response);
+void onConnectFailure(void* context, MQTTAsync_failureData* response);
+void onConnect(void* context, MQTTAsync_successData* response);
+int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m);
 void disconnect (void * context);
 
 //necessário mutex para proteger escrita concorrente na dv_table_
@@ -52,19 +52,16 @@ int finished;
 int flag_local_pub = 0;
 
 char TOPIC [MAX_NAME_USER];
-char TOPIC_CHAT [MAX_NAME_USER];
 char TOPIC_AUX [MAX_NAME_USER];
 char CLIENTID [MAX_NAME_USER];
 
-int ocupado_global = 0;
-
-int espera_convite_global = 0; 
-int resposta_convite_global = 0; //0 = não convidou, 1 = convidou, 2 = sim, 3 = não.
+int ocupado = 0;
+int online = 0;
+int espera_convite = 0; 
+int resposta_convite = 0; //0 = não convidou, 1 = convidou, 2 = sim, 3 = não.
 int exit_total = 1;
 
-char send_message_global [MAX_MESSAGE + MAX_NAME_USER];
-int new_message_global = 0;
+char message_global [MAX_MESSAGE + MAX_NAME_USER];
+int new_message = 0;
 
-//int send_message_global = 0;
-
-volatile MQTTClient_deliveryToken deliveredtoken;
+int send_message_global = 0;

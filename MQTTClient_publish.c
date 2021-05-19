@@ -17,11 +17,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+
 #include "MQTTClient.h"
+
+#include <strings.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 
 #define ADDRESS     "tcp://localhost:1883"
 #define CLIENTID    "ExampleClientPub"
-#define TOPIC       "MQTT_Examples"
+#define TOPIC       "U1_Control"
 #define PAYLOAD     "Hello World! vai funcionar ?"
 #define QOS         1
 #define TIMEOUT     10000L
@@ -49,19 +56,36 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+   printf("Waiting for up to %d seconds for publication of %s\n"
+            "on topic %s for client with ClientID: %s\n",
+            (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
+
+    
+    
     pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen = (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
+    while (1)
+    {
+        /* code */
+  
+    
     if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
     {
          printf("Failed to publish message, return code %d\n", rc);
          exit(EXIT_FAILURE);
     }
+    sleep(5);
+    if ((rc = MQTTClient_publishMessage(client, "U2_Control", &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    {
+         printf("Failed to publish message, return code %d\n", rc);
+         exit(EXIT_FAILURE);
+    }
 
-    printf("Waiting for up to %d seconds for publication of %s\n"
-            "on topic %s for client with ClientID: %s\n",
-            (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
+    sleep(5);
+    }
+ 
     rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
     printf("Message with delivery token %d delivered\n", token);
 

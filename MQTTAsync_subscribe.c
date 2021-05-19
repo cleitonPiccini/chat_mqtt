@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "MQTTAsync.h"
+#include <pthread.h>
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -31,7 +32,7 @@
 
 #define ADDRESS     "tcp://localhost:1883"
 #define CLIENTID    "ExampleClientSub"
-#define TOPIC       "U4_Control"
+
 #define PAYLOAD     "Hello World! S2"
 #define QOS         1
 #define TIMEOUT     10000L
@@ -39,6 +40,7 @@
 int disc_finished = 0;
 int subscribed = 0;
 int finished = 0;
+char TOPIC[300] = "U1_Control";
 
 //programa ja possui esta função
 void connlost(void *context, char *cause)
@@ -112,18 +114,14 @@ void onConnect(void* context, MQTTAsync_successData* response)
 
 	printf("Successful connection\n");
 
-	printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
-           "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
-	opts.onSuccess = onSubscribe;
-	opts.onFailure = onSubscribeFailure;
-	opts.context = client;
+	printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n" "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
+	
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
 		finished = 1;
 	}
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -153,7 +151,8 @@ int main(int argc, char* argv[])
 	conn_opts.onSuccess = onConnect;
 	conn_opts.onFailure = onConnectFailure;
 	conn_opts.context = client;
-	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
+
+	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS )
 	{
 		printf("Failed to start connect, return code %d\n", rc);
 		rc = EXIT_FAILURE;
