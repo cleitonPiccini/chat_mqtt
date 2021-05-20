@@ -82,12 +82,12 @@ int main(int argc, char* argv[])
          printf("Failed to publish message, return code %d\n", rc);
          exit(EXIT_FAILURE);
     }
-
+    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
+    printf("Message with delivery token %d delivered\n", token);
     sleep(5);
     }
  
-    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
-    printf("Message with delivery token %d delivered\n", token);
+
 
     if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
     	printf("Failed to disconnect, return code %d\n", rc);

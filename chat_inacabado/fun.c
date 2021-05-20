@@ -1,16 +1,16 @@
 #include "fun.h"
 
-//Falha na comunicação.
+//
 void connlost(void *context, char *cause)
 {
     printf("\nConnection lost\n");
     printf("     cause: %s\n", cause);
 }
 
-//Mensagem entregue ao broker.
+//
 void delivered(void *context, MQTTClient_deliveryToken dt)
 {
-    printf("\n");
+    printf("*");
     deliveredtoken = dt;
 }
 
@@ -18,18 +18,10 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
 
-	if (flag_pub_global == 0)
-	{
-		pthread_mutex_lock(&new_message_mutex);
-		strcpy(send_message_global, (char*)message->payload);
-		strcpy(send_message_topicname_global, (char*)topicName);
-		new_message_global	= 1;
+	pthread_mutex_lock(&new_message_mutex);
+	strcpy(send_message_global, (char*)message->payload);
+	new_message_global	= 1;
 	
-	}
-	pthread_mutex_lock(&flag_pub_mutex);
-	flag_pub_global = 0;
-	pthread_mutex_unlock(&flag_pub_mutex);
-
 	MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -59,7 +51,9 @@ void payload_message( char buffer_[MAX_NAME_USER + MAX_MESSAGE], int type_msg)
 			break;
 		//Mensagem de conversação do CHAT.
 		case 3:
-			strcpy(message, CLIENTID );
+			//setbuf(stdin, 0);
+			//fgets(buffer_, sizeof(buffer_), stdin);
+    		strcpy(message, CLIENTID );
 			strcat(message, " => ");
 			strcat(message, buffer_);
 			strcpy(PAYLOAD, message);
@@ -165,8 +159,9 @@ void * mqtt_control ()
     			pubmsg.retained = 0;
 
 				//Evita o "eco" nas mensagens enviadas.
-				pthread_mutex_lock(&flag_pub_mutex);
+				//pthread_mutex_lock(&flag_pub_mutex);
 				flag_pub_global = 1;
+				//pthread_mutex_unlock(&flag_pub_mutex);
 
     			if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
     			{
@@ -175,11 +170,9 @@ void * mqtt_control ()
 					finished = 1;
 					continue;
     			}
-
-				pthread_mutex_unlock(&flag_pub_mutex);
-			    
-				rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
-				//printf("\n");
+				
+			    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
+				printf("*\n");
 				//pthread_mutex_lock(&control_message_mutex);
 				control_message_global = 0;
 				pthread_mutex_unlock(&control_message_mutex);
@@ -208,6 +201,7 @@ void * mqtt_control ()
 	pthread_exit(NULL);
 }
 
+
 //Função a ser executada na thread que recebe as mensagens, identifica-as e toma uma decisão.
 void* subscribe_thread ()
 {
@@ -215,6 +209,7 @@ void* subscribe_thread ()
 	char message_s [MAX_MESSAGE + MAX_NAME_USER] = "";
 	char message_n [MAX_MESSAGE + MAX_NAME_USER] = "";
 	char TOPIC_AUX [MAX_NAME_USER] = "";
+	//char message_convite [MAX_MESSAGE + MAX_NAME_USER] = "--Solicitacao U1_Control deseja trocar mensagens ? --s = sim / --n = não.";
 	char *token = NULL;
 	
 	while (!finished)
@@ -232,11 +227,13 @@ void* subscribe_thread ()
 				strcat(message_s, "-s\n");
 				strcpy(message_n, TOPIC);
 				strcat(message_n, "-n\n");
-
+				printf("string para compar o sim = %s\n",message_s);
+				printf("string para comparar com o não = %s\n",message_n);
 				//Respondeu que sim.
 				if ( strcmp(message, message_s) == 0 )
 				{
 					//printf("respondeu sim\n");//usando para debug.
+					//pthread_mutex_lock(&resposta_convite_mutex);
 					strcpy(TOPIC_CHAT, CLIENTID);
 					strcat(TOPIC_CHAT, "-");
 					strcat(TOPIC_CHAT, TOPIC);
@@ -246,10 +243,14 @@ void* subscribe_thread ()
 					
 				//Respondeu que não.
 				} else if ( strcmp(message, message_n) == 0) {
+					//printf("respondeu não\n");//usando para debug.
+					//pthread_mutex_lock(&resposta_convite_mutex);
 					resposta_convite_global = 3;
 					pthread_mutex_unlock(&resposta_convite_mutex);
 				} else {
 					printf("Erro na resposta: ");
+					//resposta_convite_global = 0;
+					//pthread_mutex_unlock(&resposta_convite_mutex);
 				}
 				strcpy(message_s, "");
 				strcpy(message_n, "");
@@ -261,25 +262,28 @@ void* subscribe_thread ()
 				token = strtok(message, "\n");
 				token = strtok(token, " ");
 
+				//printf("Valor atual do Toke =%s\n", token);//usando para debug.
+				//message_convite = "--Solicitacao U1_Control deseja trocar mensagens ? --s = sim / --n = não.";
+				//--Solicitacao U1_Control deseja trocar mensagens ? --s = sim / --n = não.
 				if (strcmp(token, "--Solicitacao") == 0) {
 					
 					token = strtok(NULL, " ");
 					strcpy (TOPIC_AUX, token);
-					printf("Vc recebeu uma solicitação do Usuário %s para o CHAT\n", TOPIC_AUX);
+					printf("Vc recebeu uma solicitação do %s para o CHAT\n", TOPIC_AUX);
 					strcpy(TOPIC_PUB, TOPIC_AUX);
 					strcat (TOPIC_AUX, "-");
-					strcat (TOPIC_AUX, CLIENTID);
+					strcat (TOPIC_AUX, TOPIC);
 					strcpy (TOPIC_CHAT, TOPIC_AUX);
-					printf("Para aceitar => Digite -s\n");
+					printf("O novo tópico de publicação = %s\n", TOPIC_CHAT);
+					printf("Para acitar => Digite -s\n");
 					printf("Para recusar => Digite -n\n");
-
-				} else {
-					printf("Mensagem fora de padão\n");
+					
+					//printf("O topic_chat ficou assim = %s\n", TOPIC_CHAT);
+					//espera_convite_global = 0;
+					//pthread_mutex_unlock(&espera_convite_mutex);
 				}
-				//token = NULL;
 			}
 			
-			//if (libera_print_message_global == 1 && strcmp(TOPIC, send_message_topicname_global) == 0 ){
 			if (libera_print_message_global == 1){
 				pthread_mutex_lock(&printf_mutex);
     			printf("%s", message);
@@ -348,11 +352,13 @@ void* menu_thread (void *data)
 	//Se conecta ao broker.
 	pthread_mutex_lock(&create_client_mutex);
 	create_client_global = 1;
+	//pthread_mutex_unlock(&create_client_mutex);
 	while (create_client_global == 1);
 	
 	pthread_mutex_lock(&subscribe_topic_mutex);
 	strcpy(TOPIC, CLIENTID);//Tópico do usuário.
 	subscribe_topic_global = 1;
+	//pthread_mutex_unlock(&subscribe_topic_mutex);
 	while (subscribe_topic_global == 1);
 
 	exit_ = 1;
@@ -368,7 +374,6 @@ void* menu_thread (void *data)
 
 		scanf("%d", &option_chat);
 		printf("\n");
-		
 		//Opção 1 conversa particular.
 		if (option_chat == 1)
 		{
@@ -412,26 +417,42 @@ void* menu_thread (void *data)
 			pthread_mutex_lock(&resposta_convite_mutex);
 			resposta_convite_global = 1;
 			libera_print_message_global = 1;
+			//pthread_mutex_unlock(&resposta_convite_mutex);
 			
+			printf("\nAguardando resposta do %s\n", TOPIC);
+			
+			pthread_mutex_lock(&control_message_mutex);
+			payload_message(" ",1);// 1 = Mensagem de convite.
+			control_message_global = 1;
+			//pthread_mutex_unlock(&control_message_mutex);
+			while (control_message_global == 1);
+				
+
 			for (i = 0; i < TRIES_UNTIL_DESCONNECT && resposta_convite_global == 1; i++)
 			{
 				printf("Aguardando resposta do %s\n", TOPIC);
-				pthread_mutex_lock(&control_message_mutex);
-				payload_message(" ",1);// 1 = Mensagem de convite.
-				control_message_global = 1;
-				pthread_mutex_unlock(&control_message_mutex);
-				while (control_message_global == 1);
+				//pthread_mutex_lock(&control_message_mutex);
+				//payload_message(" ",1);// 1 = Mensagem de convite.
+				//control_message_global = 1;
+				//pthread_mutex_unlock(&control_message_mutex);
+				//while (control_message_global == 1);
 				sleep(10);
 			}
 			
 			if ( resposta_convite_global == 1)
 			{
-				//flag_pub_global = 0;
+				flag_pub_global = 0;
 				//pthread_mutex_lock(&resposta_convite_mutex);
 				resposta_convite_global = 0;
 				pthread_mutex_unlock(&resposta_convite_mutex);
 				printf("\nSem resposta do %s \n", TOPIC);
 			}
+			//pthread_mutex_lock(&unsubiscribe_topic_mutex);
+			//unsubiscribe_topic_global = 1;
+			//pthread_mutex_unlock(&unsubiscribe_topic_mutex);
+			//while (unsubiscribe_topic_global == 1);
+
+			//sleep(1);
 
 			//Respondeu sim.
 			if (resposta_convite_global == 2)
@@ -443,8 +464,10 @@ void* menu_thread (void *data)
 				printf("resultado final da string do topico = %s\n",TOPIC);
 				pthread_mutex_lock(&subscribe_topic_mutex);
 				subscribe_topic_global = 1;
+				//pthread_mutex_unlock(&subscribe_topic_mutex);
 				while (subscribe_topic_global == 1);
 
+				//sleep(1);
 				do
 				{
 					setbuf(stdin, 0);
@@ -458,11 +481,13 @@ void* menu_thread (void *data)
 						//Manda a mensagem dizendo q saiu do Chat.
 						payload_message(" ",2);
 						control_message_global = 1;
+						//pthread_mutex_unlock(&control_message_mutex);
 						while (control_message_global == 1);
 						
 						//Sai do topico da conversa.
 						pthread_mutex_lock(&unsubiscribe_topic_mutex);
 						unsubiscribe_topic_global = 1;
+						//pthread_mutex_unlock(&unsubiscribe_topic_mutex);
 						while (unsubiscribe_topic_global == 1);
 						
 						resposta_convite_global = 0;
@@ -472,6 +497,7 @@ void* menu_thread (void *data)
 
 					payload_message(buffer_, 3);// 3 = Mensagem do CHAT.
 					control_message_global = 1;
+					//pthread_mutex_unlock(&control_message_mutex);
 					while (control_message_global == 1);
 
 				} while (!finished);
@@ -482,18 +508,21 @@ void* menu_thread (void *data)
 			//Respondeu Não
 			if (resposta_convite_global == 3)
 			{
-				printf("\n%s não aceitou a conversa\n", TOPIC);
-				printf("\nEscolha outra opção\n");
+				printf("%s não aceitou a conversa\n", TOPIC);
+				printf("Escolha outra opção\n\n");
 				
 				//Sai do topico da conversa.
 				pthread_mutex_lock(&unsubiscribe_topic_mutex);
 				unsubiscribe_topic_global = 1;
+				//pthread_mutex_unlock(&unsubiscribe_topic_mutex);
 				while (unsubiscribe_topic_global == 1);
 				resposta_convite_global = 0;
 				pthread_mutex_unlock(&resposta_convite_mutex);
 				sleep(3);		
 				continue;
 			}
+			//exit_ = 0;
+			
 		} 
 		
 		//Opção 2 conversa em grupo.
@@ -507,10 +536,10 @@ void* menu_thread (void *data)
 			
 			pthread_mutex_lock(&subscribe_topic_mutex);
 			subscribe_topic_global = 1;
+			//pthread_mutex_unlock(&subscribe_topic_mutex);
 			while (subscribe_topic_global == 1);
 			libera_print_message_global = 1;
 			sleep(1);
-			
 			do
 			{
 				setbuf(stdin, 0);
@@ -552,51 +581,42 @@ void* menu_thread (void *data)
 			
 			pthread_mutex_lock(&espera_convite_mutex);
 			espera_convite_global = 1;
-			
+			//pthread_mutex_unlock(&espera_convite_mutex);
+			//while (espera_convite_global == 1);
 			printf("Para sair digite --Sair\n\n");
-			
+			//Aguarda ser chamado por alguém.
+			libera_print_message_global = 1;
 			do
 			{
 				setbuf(stdin, 0);
 				fgets(buffer_, sizeof(buffer_), stdin);
-				
 				//Tratamento de mensagem para sair do chat.
 				if (strcmp(buffer_, "--Sair\n") == 0)
 				{
-					espera_convite_global = 0;
-					pthread_mutex_unlock(&espera_convite_mutex);
 					break;
 				}
 				//Convite aceito.
-				if (strcmp(buffer_, "-s\n") == 0 && espera_convite_global == 1)
+				if (strcmp(buffer_, "-s\n") == 0 && espera_convite_global == 0)
 				{
 					//Manda a mensagem dizendo q saiu do Chat.
 					pthread_mutex_lock(&control_message_mutex);
 					payload_message(" ",4);
 					strcpy(TOPIC, TOPIC_PUB);
+					printf("topico q o sim foi = %s, conteudo da mensagem = %s\n",TOPIC, PAYLOAD);
 					control_message_global = 1;
-					while (control_message_global == 1);
-					
-					sleep(1);
-
-					pthread_mutex_lock(&control_message_mutex);
-					payload_message(" ",4);
-					strcpy(TOPIC, TOPIC_PUB);
-					control_message_global = 1;
+					//pthread_mutex_unlock(&control_message_mutex);
 					while (control_message_global == 1);
 					
 					strcpy(TOPIC, TOPIC_CHAT);
-					
 					//Sai do topico da conversa.
 					pthread_mutex_lock(&subscribe_topic_mutex);
 					subscribe_topic_global = 1;
+					//pthread_mutex_unlock(&unsubiscribe_topic_mutex);
 					while (subscribe_topic_global == 1);
 					espera_convite_global = 0;
 					pthread_mutex_unlock(&espera_convite_mutex);
-					
 					do
 					{
-						libera_print_message_global = 1;
 						setbuf(stdin, 0);
 						fgets(buffer_, sizeof(buffer_), stdin);
 						pthread_mutex_lock(&control_message_mutex);
@@ -607,6 +627,7 @@ void* menu_thread (void *data)
 							//Manda a mensagem dizendo q saiu do Chat.
 							payload_message(" ",2);
 							control_message_global = 1;
+							//pthread_mutex_unlock(&control_message_mutex);
 							while (control_message_global == 1);
 					
 							//Sai do topico da conversa.
@@ -614,13 +635,12 @@ void* menu_thread (void *data)
 							unsubiscribe_topic_global = 1;
 							//pthread_mutex_unlock(&unsubiscribe_topic_mutex);
 							while (unsubiscribe_topic_global == 1);
-							
 							espera_convite_global = 0;
 							pthread_mutex_unlock(&espera_convite_mutex);
 							break;
 						}
 					
-						payload_message(buffer_, 3);
+						payload_message(" ",3);
 						control_message_global = 1;
 						//pthread_mutex_unlock(&control_message_mutex);
 						while (control_message_global == 1);
@@ -631,7 +651,7 @@ void* menu_thread (void *data)
 				}
 
 				//Resposta não
-				if (strcmp(buffer_, "-n\n") == 0 && espera_convite_global == 1)
+				if (strcmp(buffer_, "-n\n") == 0 && espera_convite_global == 0)
 				{
 					//Manda a mensagem dizendo q saiu do Chat.
 					pthread_mutex_lock(&control_message_mutex);
@@ -640,14 +660,6 @@ void* menu_thread (void *data)
 					control_message_global = 1;
 					//pthread_mutex_unlock(&control_message_mutex);
 					while (control_message_global == 1);
-					
-					//Manda a mensagem dizendo q saiu do Chat.
-					pthread_mutex_lock(&control_message_mutex);
-					payload_message(" ",5);
-					strcpy(TOPIC, TOPIC_PUB);
-					control_message_global = 1;
-					while (control_message_global == 1);
-					
 					espera_convite_global = 0;
 					pthread_mutex_unlock(&espera_convite_mutex);
 					break;
@@ -673,7 +685,7 @@ destroy_exit:
 	pthread_exit(NULL);
 }
 
-//Inicia as Threads da aplicação.
+//
 void start_chat() 
 {
 	pthread_t threads[3];
