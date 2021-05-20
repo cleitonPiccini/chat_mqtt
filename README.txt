@@ -17,7 +17,8 @@ Execute a aplicação.
 
 Escolha seu usuário entre as 4 opções de usuários, ou escolha sair da aplicação. Caso o usuário já esteja em uso a aplicação será fechada.
 
-Após escolher seu usuário escolha entre as opções:
+Após escolher seu usuário, a aplicação é direcionada para o menu de escolhas.
+No menu escolha entre as seguintes opções:
     1 - Conversa particular com outro usuário.    
         1.1 - Informe com qual usuário deseja conversar
         1.2 - Aguarde a resposta do outro usuário.
