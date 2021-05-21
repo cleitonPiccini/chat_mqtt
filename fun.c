@@ -38,7 +38,6 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 //Modela o payload 
 void payload_message( char buffer_[MAX_NAME_USER + MAX_MESSAGE], int type_msg)
 {   
-	//char buffer_[MAX_MESSAGE];
 	char message[MAX_NAME_USER + MAX_MESSAGE] = "";
 	
 	pthread_mutex_lock(&payload_mutex);
@@ -96,13 +95,13 @@ void * mqtt_control ()
 {
 
 	MQTTClient client;
-    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-    MQTTClient_message pubmsg = MQTTClient_message_initializer;
-    MQTTClient_deliveryToken token;
+	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+    	MQTTClient_deliveryToken token;
 	int rc;
 
 	conn_opts.keepAliveInterval = 20;
-    conn_opts.cleansession = 1;
+   	conn_opts.cleansession = 1;
 
 	while (!finished)
 	{
@@ -220,7 +219,6 @@ void* subscribe_thread ()
 	{
 		if (new_message_global == 1)
 		{	
-			//pthread_mutex_lock(&new_message_mutex);
 			strcpy(message, send_message_global);
 			
 
@@ -274,7 +272,6 @@ void* subscribe_thread ()
 				} else {
 					printf("Mensagem fora de padão\n");
 				}
-				//token = NULL;
 			}
 			
 			if (libera_print_message_global == 1){
@@ -408,7 +405,7 @@ void* menu_thread (void *data)
 			//Envio de mensagem para solicitar a conversa.
 			pthread_mutex_lock(&resposta_convite_mutex);
 			resposta_convite_global = 1;
-			libera_print_message_global = 1;
+			//libera_print_message_global = 1;
 			
 			for (i = 0; i < TRIES_UNTIL_DESCONNECT && resposta_convite_global == 1; i++)
 			{
@@ -440,7 +437,7 @@ void* menu_thread (void *data)
 				pthread_mutex_lock(&subscribe_topic_mutex);
 				subscribe_topic_global = 1;
 				while (subscribe_topic_global == 1);
-
+				libera_print_message_global = 1;
 				do
 				{
 					setbuf(stdin, 0);
@@ -566,7 +563,7 @@ void* menu_thread (void *data)
 				//Convite aceito.
 				if (strcmp(buffer_, "-s\n") == 0 && espera_convite_global == 1)
 				{
-					//Manda a mensagem dizendo q saiu do Chat.
+					//Manda a mensagem dizendo q entrou no Chat.
 					pthread_mutex_lock(&control_message_mutex);
 					payload_message(" ",4);
 					strcpy(TOPIC, TOPIC_PUB);
@@ -587,7 +584,7 @@ void* menu_thread (void *data)
 					while (subscribe_topic_global == 1);
 					espera_convite_global = 0;
 					pthread_mutex_unlock(&espera_convite_mutex);
-					sleep(1);
+					sleep(4);
 					printf("Conversa iniciada :\n");
 					do
 					{	
